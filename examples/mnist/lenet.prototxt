@@ -1,0 +1,129 @@
+name: "LeNet"
+layer {
+  name: "data"
+  type: "Input"
+  top: "data"
+  input_param { shape: { dim: 64 dim: 1 dim: 28 dim: 28 } }
+}
+layer {
+  name: "conv1"     # 层名称
+  type: "Convolution" # 层类型
+  bottom: "data"  #下一层名称
+  top: "conv1"  #上一层名称
+  param { #层参数：权重相关参数
+    lr_mult: 1  # 
+  }
+  param { # 层参数：偏置相关参数
+    lr_mult: 2
+  }
+  convolution_param {   #层参数
+    num_output: 20  # 输出通道数
+    kernel_size: 5 # 卷积核尺寸，也即滤波器尺寸 
+    stride: 1   # 卷积步长
+    weight_filler {
+      type: "xavier"  # 初始化权重的方式
+    }
+    bias_filler {
+      type: "constant"  # 初始化偏置的方式
+    }
+  }
+}
+layer {
+  name: "pool1"
+  type: "Pooling" # 池化类型
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX   # 池化类型，取最大值
+    kernel_size: 2  # 池化核尺寸
+    stride: 2   # 池化步长
+  }
+}
+layer {
+  name: "conv2"
+  type: "Convolution"
+  bottom: "pool1"
+  top: "conv2"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 2
+  }
+  convolution_param {
+    num_output: 50
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+layer {
+  name: "pool2"
+  type: "Pooling"
+  bottom: "conv2"
+  top: "pool2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 2
+    stride: 2
+  }
+}
+layer {
+  name: "ip1"   #全连接层
+  type: "InnerProduct"   # 层类型
+  bottom: "pool2" 
+  top: "ip1"  
+  param { # 权重
+    lr_mult: 1
+  }
+  param { # 偏置
+    lr_mult: 2
+  }
+  inner_product_param { # 全连接层参数
+    num_output: 500 # 输出通道数
+    weight_filler { # 初始化方式
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+layer {   # 神经元激活函数层
+  name: "relu1"
+  type: "ReLU"
+  bottom: "ip1"
+  top: "ip1"
+}
+layer {
+  name: "ip2"
+  type: "InnerProduct"
+  bottom: "ip1"
+  top: "ip2"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 2
+  }
+  inner_product_param {
+    num_output: 10
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+layer {
+  name: "prob"
+  type: "Softmax"   #使用是要的准确率，是Softmax；训练使用的是SoftmaxWithLoss
+  bottom: "ip2"
+  top: "prob"
+}
