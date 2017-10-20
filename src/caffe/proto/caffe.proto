@@ -2,33 +2,36 @@ syntax = "proto2";
 
 package caffe;
 
-// Specifies the shape (dimensions) of a Blob.// 该结构描述了Blob数据块形状信息{指定Blob的形状或维度-4D （Num×Channel×Height×Wight）}
+// Specifies the shape (dimensions) of a Blob.// 该结构描述了Blob的shape信息(Num×Channel×Height×Wight)
 message BlobShape {
-  repeated int64 dim = 1 [packed = true];   // packed表示这些值在内存中紧密排布，
+  // 使用repeated修饰符，表示有多个int64类型的值
+  // packed表示这些值在内存中紧密排布，是连续不间断的
+  repeated int64 dim = 1 [packed = true];   
 }
 
 //blob的属性以及blob中的数据(data\diff),数据块{形状，数据，微分}
 //blob包含三类数据：
-//1、data： 前向传播所用到的数据
-//2、diff： 反向传播所用到的梯度数据
-//3、shape： 解释data和diff的shape数据
+//1、data： 存储前向传播所用到的图像像素数据、权重偏置等数据
+//2、diff： 存储反向传播所用到的梯度增量数据
+//3、shape：存储维度信息，解释data和diff的shape数据
+
 message BlobProto {
-  optional BlobShape shape = 7;
-  repeated float data = 5 [packed = true];//存储数据或权值
-  repeated float diff = 6 [packed = true];//存储增量信息
+  optional BlobShape shape = 7; // 使用BlobShape对象来表示维度信息
+  repeated float data = 5 [packed = true]; //都是repeated，所以可以有多个float类型的值，由shape指定
+  repeated float diff = 6 [packed = true];
   repeated double double_data = 8 [packed = true];//double类型的data
   repeated double double_diff = 9 [packed = true];//double类型的diff
 
   // 4D dimensions -- deprecated.  Use "shape" instead.
-  // 4维规模数据--已过期，使用BlobShape代替
-  optional int32 num = 1 [default = 0]; // 样本数
-  optional int32 channels = 2 [default = 0];  // 图片channel
+  // 下面的这种维度信息表示已过期，在新版本中推荐使用BlobShape来代替
+  optional int32 num = 1 [default = 0]; 
+  optional int32 channels = 2 [default = 0];  
   optional int32 height = 3 [default = 0];
   optional int32 width = 4 [default = 0];
 }
 
 // The BlobProtoVector is simply a way to pass multiple blobproto instances around.
-// 存放多个BlobProto实例的对应Index，易于引用
+// Vector中可以存放多个BlobProto实例，易于引用
 message BlobProtoVector {
   repeated BlobProto blobs = 1;
 }

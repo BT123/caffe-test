@@ -66,7 +66,7 @@ Classifier::Classifier(const string& model_file,
   num_channels_ = input_layer->channels();
   CHECK(num_channels_ == 3 || num_channels_ == 1)
     << "Input layer should have 1 or 3 channels.";
-  input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
+  input_geometry_ = cv::Size(input_layer->width(), input_layer->height());  // 从net配置文件中获取输入层参数input_layer,并得到width和height，即为输入层所需的size（input_geometry_）
 
   /* Load the binaryproto mean file. 加载mean file*/
   SetMean(mean_file); 
@@ -201,11 +201,13 @@ void Classifier::Preprocess(const cv::Mat& img,
   else
     sample = img;
 
+  // sample_resized 为resize之后的输出图像
   cv::Mat sample_resized;
-  if (sample.size() != input_geometry_)
+  // 若输入的图像img，经过灰度转换为sample，其size不会发生改变，即输入图片的size（sample.size()）与网络需要的输入size（input_geometry_）不一致，进行resize操作
+  if (sample.size() != input_geometry_) 
     cv::resize(sample, sample_resized, input_geometry_);
-  else
-    sample_resized = sample;
+  else  // 若size一致，不resize
+    sample_resized = sample;  // 若size一致，不resize
 
   cv::Mat sample_float;
   if (num_channels_ == 3)
