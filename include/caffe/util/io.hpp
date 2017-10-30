@@ -54,7 +54,7 @@ bool ReadProtoFromTextFile(const char* filename, Message* proto);
 inline bool ReadProtoFromTextFile(const string& filename, Message* proto) {
   return ReadProtoFromTextFile(filename.c_str(), proto);
 }
-
+// c_str()生成一个const char*指针，指向以空字符终止的数组（临时的数组）；即string 到 const char*的转换操作
 inline void ReadProtoFromTextFileOrDie(const char* filename, Message* proto) {
   CHECK(ReadProtoFromTextFile(filename, proto));
 }

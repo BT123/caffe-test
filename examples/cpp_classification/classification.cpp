@@ -50,21 +50,21 @@ Classifier::Classifier(const string& model_file,
                        const string& mean_file,
                        const string& label_file) {
 #ifdef CPU_ONLY
-  Caffe::set_mode(Caffe::CPU);
+  Caffe::set_mode(Caffe::CPU);  // 设置计算模式为CPU
 #else
   Caffe::set_mode(Caffe::GPU);
 #endif
 
-  /* Load the network. */
+  /* Load the network. 加载网络模型*/
   net_.reset(new Net<float>(model_file, TEST)); // 加载prototxt文件，即其中定义了网络结构，其中的参数在/src/caffe/proto/caffe.proto定义了
-  net_->CopyTrainedLayersFrom(trained_file);    // 加载caffemodel文件，即model训练得到的参数（权重W和偏置b）
+  net_->CopyTrainedLayersFrom(trained_file);    // 加载已经训练好的caffemodel文件，即model训练得到的参数（权重W和偏置b）
 
   CHECK_EQ(net_->num_inputs(), 1) << "Network should have exactly one input.";
   CHECK_EQ(net_->num_outputs(), 1) << "Network should have exactly one output.";
 
-  Blob<float>* input_layer = net_->input_blobs()[0];
-  num_channels_ = input_layer->channels();
-  CHECK(num_channels_ == 3 || num_channels_ == 1)
+  Blob<float>* input_layer = net_->input_blobs()[0];  // 获取输入层
+  num_channels_ = input_layer->channels();  // 输入层所需输入image的通道数，3为RGB，1为灰度图
+  CHECK(num_channels_ == 3 || num_channels_ == 1) 
     << "Input layer should have 1 or 3 channels.";
   input_geometry_ = cv::Size(input_layer->width(), input_layer->height());  // 从net配置文件中获取输入层参数input_layer,并得到width和height，即为输入层所需的size（input_geometry_）
 
@@ -103,7 +103,7 @@ static std::vector<int> Argmax(const std::vector<float>& v, int N) {
 
 /* Return the top N predictions. */
 std::vector<Prediction> Classifier::Classify(const cv::Mat& img, int N) {
-  std::vector<float> output = Predict(img);
+  std::vector<float> output = Predict(img); // 执行predict函数，获得输出
 
   N = std::min<int>(labels_.size(), N);
   std::vector<int> maxN = Argmax(output, N);
@@ -130,7 +130,7 @@ void Classifier::SetMean(const string& mean_file) {
   /* The format of the mean file is planar 32-bit float BGR or grayscale. */
   std::vector<cv::Mat> channels;
   float* data = mean_blob.mutable_cpu_data();
-  for (int i = 0; i < num_channels_; ++i) {
+  for (int i = 0; i < num_channels_; ++i) { // 提取每个通道的数据分别保存为Mat格式，并按顺序放入channels中
     /* Extract an individual channel. */
     cv::Mat channel(mean_blob.height(), mean_blob.width(), CV_32FC1, data);
     channels.push_back(channel);
@@ -139,12 +139,12 @@ void Classifier::SetMean(const string& mean_file) {
 
   /* Merge the separate channels into a single image. */
   cv::Mat mean;
-  cv::merge(channels, mean);
+  cv::merge(channels, mean); // ？
 
   /* Compute the global mean pixel value and create a mean image
    * filled with this value. */
-  cv::Scalar channel_mean = cv::mean(mean);
-  mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean);
+  cv::Scalar channel_mean = cv::mean(mean); // 计算每个通道的均值，得到一个三维的向量
+  mean_ = cv::Mat(input_geometry_, mean.type(), channel_mean); // 将向量扩展成一个新的均值图片
 }
 
 std::vector<float> Classifier::Predict(const cv::Mat& img) {
@@ -157,11 +157,11 @@ std::vector<float> Classifier::Predict(const cv::Mat& img) {
   std::vector<cv::Mat> input_channels;
   WrapInputLayer(&input_channels);
 
-  Preprocess(img, &input_channels);
+  Preprocess(img, &input_channels); // 预处理
 
-  net_->Forward();
+  net_->Forward();   // 前向计算
 
-  /* Copy the output layer to a std::vector */
+  /* Copy the output layer to a std::vector 将输出层的结果保存到vector中*/
   Blob<float>* output_layer = net_->output_blobs()[0];
   const float* begin = output_layer->cpu_data();
   const float* end = begin + output_layer->channels();
@@ -172,7 +172,7 @@ std::vector<float> Classifier::Predict(const cv::Mat& img) {
  * (one per channel). This way we save one memcpy operation and we
  * don't need to rely on cudaMemcpy2D. The last preprocessing
  * operation will write the separate channels directly to the input
- * layer. */
+ * layer. 这个其实是为了获得net_网络的输入层数据的指针，然后后面我们直接把输入图片数据拷贝到这个指针里面*/
 void Classifier::WrapInputLayer(std::vector<cv::Mat>* input_channels) {
   Blob<float>* input_layer = net_->input_blobs()[0];
 
@@ -188,7 +188,7 @@ void Classifier::WrapInputLayer(std::vector<cv::Mat>* input_channels) {
 
 void Classifier::Preprocess(const cv::Mat& img,
                             std::vector<cv::Mat>* input_channels) {
-  /* Convert the input image to the input image format of the network. */
+  /* Convert the input image to the input image format of the network. 转换格式*/
   cv::Mat sample;
   if (img.channels() == 3 && num_channels_ == 1)
     cv::cvtColor(img, sample, cv::COLOR_BGR2GRAY);
@@ -209,18 +209,18 @@ void Classifier::Preprocess(const cv::Mat& img,
   else  // 若size一致，不resize
     sample_resized = sample;  // 若size一致，不resize
 
-  cv::Mat sample_float;
+  cv::Mat sample_float; // 数据类型转换，转为float
   if (num_channels_ == 3)
     sample_resized.convertTo(sample_float, CV_32FC3);
   else
     sample_resized.convertTo(sample_float, CV_32FC1);
-
+  // 均值归一化
   cv::Mat sample_normalized;
   cv::subtract(sample_float, mean_, sample_normalized);
 
   /* This operation will write the separate BGR planes directly to the
    * input layer of the network because it is wrapped by the cv::Mat
-   * objects in input_channels. */
+   * objects in input_channels. 3通道数据分开存储*/
   cv::split(sample_normalized, *input_channels);
 
   CHECK(reinterpret_cast<float*>(input_channels->at(0).data)

@@ -6,10 +6,11 @@
 #include <vector>
 
 #include "caffe/common.hpp"
-#include "caffe/proto/caffe.pb.h"
-#include "caffe/syncedmem.hpp"
+#include "caffe/proto/caffe.pb.h" // caffe.proto生成的头文件，生成了BlobProto、BlobShape
+#include "caffe/syncedmem.hpp"  // CPU、GPU共享内存类，用于数据同步
 
-const int kMaxBlobAxes = 32;
+const int kMaxBlobAxes = 32;    //Blob的最大维数
+
 
 namespace caffe {
 
